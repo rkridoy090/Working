@@ -1,490 +1,726 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>দৈনিক হিসাব অ্যাপ</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>দৈনিক হিসাব - Pro UI</title>
 
-    <style>
-        body { font-family: Arial; margin:0; padding:0; background:#f4f4f4; }
-        .container { max-width:1200px; margin:20px auto; background:white; padding:20px; border-radius:8px; }
+  <style>
+    /* ----------------- CORE THEME (PART-1 + PART-4 merged) ----------------- */
+    :root{
+      --primary:#007bff;
+      --danger:#dc3545;
+      --success:#28a745;
+      --muted:#6c757d;
+      --glass-bg: rgba(255,255,255,0.96);
+      --hover:#f9fcff;
+      --rentHeader:#2AF598;
+      --payHeader:#09f;
+    }
 
-        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-        h1 { color:#007bff; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Inter,"Noto Sans Bengali",sans-serif;background:#f0f2f8;color:#111;line-height:1.3}
+    .container{max-width:1200px;margin:18px auto;padding:20px;background:white;border-radius:14px;box-shadow:0 6px 22px rgba(0,0,0,0.06)}
 
-        button { padding:10px 15px; border:none; border-radius:5px; background:#007bff; color:white; cursor:pointer; }
-        button:hover { background:#0056b3; }
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    h1{font-size:22px;color:var(--primary);font-weight:800}
 
-        #authOverlay { position:fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:9999; }
-        .colorful-loader { width:60px; height:60px; border:8px solid #f3f3f3; border-radius:50%; border-top:8px solid #FF5733; border-right:8px solid #C70039; border-bottom:8px solid #900C3F; border-left:8px solid #FFC300; animation:spin 1s linear infinite; }
-        @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
-        .waiting-text { margin-top:20px; font-size:18px; font-weight:bold; background:linear-gradient(to right,#FF5733,#FFC300,#33FF57,#3380FF); -webkit-background-clip:text; color:transparent; }
+    /* global button */
+    .btn{padding:12px 18px;border:none;border-radius:28px;cursor:pointer;font-weight:700;color:white;background:linear-gradient(90deg,#2AF598,#009EFD);box-shadow:0 10px 30px rgba(2,6,23,0.08);transition:.2s}
+    .btn:hover{transform:translateY(-3px)}
+    .btn:active{transform:scale(.98)}
+    .btn-sm{padding:7px 12px;border-radius:10px;font-size:14px}
 
-        .login-container { max-width:400px; margin:70px auto; background:white; padding:25px; border-radius:10px; text-align:center; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+    /* floating add button */
+    #floatingAdd{position:fixed;right:18px;bottom:22px;z-index:20000;background:#13c1ff;box-shadow:0 8px 20px rgba(0,0,0,0.2);padding:16px 20px;font-size:18px;border-radius:50px;display:flex;gap:8px;align-items:center}
 
-        .table-container { overflow-x:auto; }
-        table { width:100%; border-collapse:collapse; min-width:780px; }
-        th,td { border:1px solid #ddd; padding:8px; text-align:left; }
-        th { background:#f2f2f2; }
+    /* SUMMARY BAR */
+    .summary-bar{background:#f7fbff;border-radius:12px;padding:12px 14px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:14px;display:flex;justify-content:space-between;gap:12px;font-size:15px;font-weight:700}
 
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); align-items:center; justify-content:center; }
-        .modal-content { background:white; padding:20px; width:90%; max-width:500px; border-radius:10px; position:relative; }
-        .close-btn { position:absolute; top:10px; right:15px; font-size:28px; cursor:pointer; }
+    /* TABLE */
+    .table-container{overflow-x:auto;border-radius:14px}
+    table{width:100%;border-collapse:collapse;background:white;border-radius:14px;overflow:hidden}
+    thead th{background:#f7f9ff;font-weight:700;padding:12px 14px;border-bottom:1px solid #eaecef;position:sticky;top:0;z-index:10}
+    tbody tr:hover{background:#f8fcff}
+    tbody td{padding:10px 14px;border-bottom:1px solid #f3f4f7}
+    tfoot td{padding:12px;background:#fff2a6;font-weight:800}
 
-        .popup-step-content { display:none; }
+    /* Action Icon Buttons */
+    .icon-btn{padding:6px 9px;border-radius:8px;cursor:pointer;border:none;font-size:13px;font-weight:700}
+    .icon-btn.edit{background:#e8f0ff;color:#1155cc}
+    .icon-btn.delete{background:#ffe8e8;color:#d32222}
 
-        .popup-controls { display:flex; justify-content:space-between; margin-top:25px; }
+    /* Pay Type Badge */
+    .pay-badge{padding:4px 8px;border-radius:8px;font-size:12px;font-weight:800}
+    .pay-badge.hand{background:linear-gradient(90deg,#d8ffe4,#aaffc9);color:#087f42}
+    .pay-badge.bkash{background:linear-gradient(90deg,#ffd7eb,#ffa4ce);color:#d11670}
 
-        #payTypePopup { display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4); justify-content:center; align-items:center; z-index:10000; }
+    /* Rent/Pay Header Active */
+    #rentHeader.active{background:linear-gradient(135deg,#00c853,#64dd17) !important;color:white !important}
+    #payHeader.active{background:linear-gradient(135deg,#ff4081,#ff80ab) !important;color:white !important}
 
-        .payTypeBtn.disabled { opacity:0.4; pointer-events:none; }
+    /* modal */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:25000;padding:18px;opacity:0;pointer-events:none;transition:opacity 220ms ease}
+    .modal[style*="display: flex"], .modal[style*="display:flex"]{opacity:1;pointer-events:auto}
+    .modal-content{background:white;width:100%;max-width:560px;padding:22px;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.15);position:relative;transform:translateY(6px) scale(.985);opacity:0;transition:transform 260ms cubic-bezier(.2,.9,.3,1),opacity 200ms ease}
+    .modal[style*="display: flex"] .modal-content,.modal[style*="display:flex"] .modal-content{transform:translateY(0) scale(1);opacity:1}
+    .modal-content input{width:100%;padding:12px;border:1px solid #e5e8ef;border-radius:10px;font-size:15px;margin-bottom:8px}
+    .close-btn{position:absolute;top:12px;right:12px;border:none;background:transparent;font-size:22px;cursor:pointer}
 
-        @media(max-width:768px){
-            table { min-width:900px; }
-        }
-    </style>
+    /* small helpers */
+    .rent-include-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+    .rent-include-row label{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:15px}
+    .rent-include-row input[type="checkbox"]{width:18px;height:18px;margin:0}
+
+    /* focus & reduced-motion */
+    :focus{outline:3px solid rgba(2,123,255,0.12);outline-offset:3px}
+    @media (prefers-reduced-motion: reduce){.modal,.modal-content,.btn,tbody tr:hover{transition:none!important;animation:none!important}}
+
+    /* visually hidden */
+    .visually-hidden{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+
+    /* disabled look */
+    .btn.disabled,.payTypeBtn.disabled{opacity:.45;pointer-events:none;filter:grayscale(.08)}
+
+    .icon-btn{transition:transform .12s ease,box-shadow .12s ease}
+    .icon-btn:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.06)}
+    @media (max-width:480px){#floatingAdd{right:12px;bottom:16px;padding:12px 14px}}
+
+    /* responsive table compact */
+    @media (max-width:768px){
+      body{zoom:0.5.5;font-size:14px}
+      thead th, tbody td{padding:8px}
+      table{min-width:780px}
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="authOverlay">
-    <div class="colorful-loader"></div>
-    <div class="waiting-text">Waiting please...</div>
-</div>
+  <!-- HUMAN LOADER (optional placeholder) -->
+  <div id="humanLoader" aria-hidden="true" style="display:none;position:fixed;inset:0;z-index:99999;justify-content:center;align-items:center;background:linear-gradient(135deg,#667eea,#764ba2)">
+    <div class="loader-card" role="status" aria-live="polite" style="background:rgba(255,255,255,0.98);border-radius:18px;padding:28px;width:92%;max-width:480px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.18)">
+      <div style="height:80px;margin-bottom:12px">লোড হচ্ছে...</div>
+      <div style="height:8px;width:100%;background:#eef2ff;border-radius:10px;overflow:hidden"><div style="width:60%;height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:10px"></div></div>
+    </div>
+  </div>
 
-<div id="loginUI" class="login-container" style="display:none;">
-    <h2>Login</h2>
-    <p>Email: <b>Asad@my.com</b></p>
-    <input type="password" id="password" placeholder="Password" style="width:100%; padding:10px;">
-    <button id="loginBtn" style="width:100%; margin-top:10px;">Login</button>
-    <p id="errorMsg" style="color:red; margin-top:10px;"></p>
-</div>
-
-<div id="appUI" class="container" style="display:none;">
-
+  <!-- APP -->
+  <div class="container" id="appWrapper" aria-live="polite">
     <div class="header">
+      <div>
         <h1>দৈনিক হিসাব</h1>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px">Quick overview &amp; entries</div>
+      </div>
 
-        <div>
-            <button id="addNewBtn">➕ Add</button>
-            <button id="logoutBtn" style="background:#dc3545;">Logout</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="logoutBtn" class="btn btn-sm" style="background:var(--danger)">Logout</button>
+        <button id="addNewBtnHeader" class="btn btn-sm">➕ Add</button>
+      </div>
+    </div>
+
+    <!-- Summary bar (always visible at top) -->
+    <div class="summary-bar" role="region" aria-label="summary" aria-live="polite">
+      <div>Rent: <span id="sumRentTop">0.00</span></div>
+      <div>Basic: <span id="sumBasicTop">0.00</span></div>
+      <div>Pay: <span id="sumPayTop">0.00</span></div>
+      <div>Due: <span id="sumDueTop">0.00</span></div>
+      <div style="opacity:.7;font-size:13px">Entries: <span id="entryCount">0</span></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container" role="region" aria-label="entries table">
+      <table aria-describedby="table-desc">
+        <caption id="table-desc" style="text-align:left;padding:8px 12px;color:var(--muted);font-size:13px">রিপোর্ট</caption>
+        <thead>
+          <tr>
+            <th style="min-width:90px">Date</th>
+            <th style="min-width:120px">Day</th>
+            <th style="min-width:200px">Place</th>
+            <th id="rentHeader" style="cursor:pointer;min-width:90px">Rent</th>
+            <th style="min-width:90px">Basic</th>
+            <th id="payHeader" style="cursor:pointer;min-width:90px">Pay</th>
+            <th style="min-width:90px">Due</th>
+            <th style="min-width:120px">Total Due</th>
+            <th style="min-width:120px;text-align:center">Action</th>
+          </tr>
+        </thead>
+        <tbody id="dataTableBody" role="rowgroup"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align:center">Total</td>
+            <td id="sumRent">0.00</td>
+            <td id="sumBasic">0.00</td>
+            <td id="sumPay">0.00</td>
+            <td id="sumDue">0.00</td>
+            <td id="sumTotalDue">0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Floating Add Button -->
+  <button id="floatingAdd" title="Add new entry" aria-label="Add new">
+    <span style="font-weight:900;font-size:18px">＋</span>
+    <span style="font-weight:800">Add</span>
+  </button>
+
+  <!-- Data Modal (multi-step) -->
+  <div id="dataModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-content" role="document">
+      <button class="close-btn" aria-label="Close">✕</button>
+
+      <h2 style="margin-bottom:8px;color:var(--primary)">নতুন এন্ট্রি</h2>
+
+      <form id="dataForm" autocomplete="off">
+        <!-- step1 -->
+        <div id="step1" class="popup-step-content">
+          <label for="inputDate">Date</label>
+          <input id="inputDate" type="date" />
+          <p style="margin-top:6px">Day: <b id="autoDay">-</b></p>
         </div>
+
+        <!-- step2 -->
+        <div id="step2" class="popup-step-content" style="display:none">
+          <label for="inputPlace">Place</label>
+          <input id="inputPlace" type="text" placeholder="Enter place" />
+        </div>
+
+        <!-- step3 -->
+        <div id="step3" class="popup-step-content" style="display:none">
+          <label for="inputRent">Rent</label>
+          <input id="inputRent" type="number" inputmode="numeric" placeholder="0" />
+          <div class="rent-include-row">
+            <label><input id="inputRentIncluded" type="checkbox" /> <span>এই rent sum এ যুক্ত হবে</span></label>
+          </div>
+        </div>
+
+        <!-- step4 -->
+        <div id="step4" class="popup-step-content" style="display:none">
+          <label for="inputBasic">Basic</label>
+          <input id="inputBasic" type="number" inputmode="numeric" placeholder="0" />
+        </div>
+
+        <!-- step5 -->
+        <div id="step5" class="popup-step-content" style="display:none">
+          <label for="inputPay">Pay</label>
+          <input id="inputPay" type="number" inputmode="numeric" placeholder="0" />
+          <p>Due: <b id="autoDue">0.00</b></p>
+
+          <p style="font-weight:bold;margin:8px 0 6px">Pay Type</p>
+          <div id="payTypeControls" style="display:flex;gap:18px">
+            <button type="button" class="payTypeBtn btn pay-hand" data-type="hand">হাত</button>
+            <button type="button" class="payTypeBtn btn pay-bkash" data-type="bkash">বিকাশ</button>
+          </div>
+
+          <div id="payTypePreview" style="margin-top:10px;display:none" aria-live="polite">
+            Selected: <span id="payTypePreviewText" class="pay-badge"></span>
+          </div>
+
+          <input id="inputPayType" type="hidden" />
+        </div>
+
+        <div class="popup-controls" style="margin-top:12px;display:flex;gap:12px">
+          <div style="flex:1"><button id="prevBtn" type="button" class="btn btn-sm" style="background:#6c757d">Previous</button></div>
+          <div style="flex:1"><button id="nextBtn" type="button" class="btn btn-sm">Next</button></div>
+          <div style="flex:1"><button id="confirmBtn" type="submit" class="btn" style="background:var(--success);display:none">Save</button></div>
+        </div>
+      </form>
     </div>
+  </div>
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Day</th>
-                    <th>Place</th>
-                    <th>Rent</th>
-                    <th>Basic</th>
-                    <th id="payHeader" style="cursor:pointer; color:#007bff;">Pay</th>
-                    <th>Due</th>
-                    <th>Total Due</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-
-            <tbody id="dataTableBody"></tbody>
-
-            <tr style="background:#ffe599; font-weight:bold;">
-                <td colspan="3" style="text-align:center;">Total</td>
-                <td id="sumRent">0</td>
-                <td id="sumBasic">0</td>
-                <td id="sumPay">0</td>
-                <td id="sumDue">0</td>
-                <td id="sumTotalDue">0</td>
-                <td></td>
-            </tr>
-        </table>
+  <!-- Pay Filter Popup -->
+  <div id="payTypePopup" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;z-index:23000">
+    <div style="background:white;padding:12px;border-radius:10px;min-width:220px;box-shadow:0 8px 30px rgba(0,0,0,0.12)">
+      <div style="text-align:center;margin-bottom:8px;font-weight:800">Filter Pay</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="ptBtn btn btn-sm" data-type="all">All</button>
+        <button class="ptBtn btn btn-sm" data-type="hand">হাত</button>
+        <button class="ptBtn btn btn-sm" data-type="bkash">বিকাশ</button>
+      </div>
     </div>
+  </div>
 
-</div>
-
-<div id="dataModal" class="modal">
-    <div class="modal-content">
-
-        <span class="close-btn">&times;</span>
-        <h2>নতুন এন্ট্রি</h2>
-
-        <form id="dataForm">
-
-            <div id="step1" class="popup-step-content">
-                <label>Date</label>
-                <input type="date" id="inputDate">
-                <p>Day: <b id="autoDay"></b></p>
-            </div>
-
-            <div id="step2" class="popup-step-content">
-                <label>Place</label>
-                <input type="text" id="inputPlace">
-            </div>
-
-            <div id="step3" class="popup-step-content">
-                <label>Rent</label>
-                <input type="number" id="inputRent" value="0">
-            </div>
-
-            <div id="step4" class="popup-step-content">
-                <label>Basic</label>
-                <input type="number" id="inputBasic" value="0">
-            </div>
-
-            <div id="step5" class="popup-step-content">
-                <label>Pay</label>
-                <input type="number" id="inputPay" value="0">
-                <p>Due: <b id="autoDue"></b></p>
-
-                <p style="font-weight:bold;">Pay Type</p>
-
-                <div style="display:flex; gap:10px;">
-                    <button type="button" class="payTypeBtn" data-type="hand"
-                        style="flex:1; border:1px solid #007bff; background:white; color:#007bff;">
-                        হাত
-                    </button>
-                    <button type="button" class="payTypeBtn" data-type="bkash"
-                        style="flex:1; border:1px solid #d9534f; background:white; color:#d9534f;">
-                        বিকাশ
-                    </button>
-                </div>
-
-                <input type="hidden" id="inputPayType" value="">
-            </div>
-
-            <div class="popup-controls">
-                <button type="button" id="prevBtn" style="background:#6c757d;">Previous</button>
-                <button type="button" id="nextBtn">Next</button>
-                <button id="confirmBtn" type="submit" style="display:none;">Save</button>
-            </div>
-
-        </form>
+  <!-- Delete Confirm Modal (modern) -->
+  <div id="deleteConfirm" class="modal" aria-hidden="true" role="dialog" style="z-index:24000">
+    <div class="modal-content" role="document" style="max-width:420px;text-align:center">
+      <h3 style="margin-bottom:8px">Confirm Delete</h3>
+      <p style="color:var(--muted);margin-bottom:18px">আপনি কি নিশ্চিতভাবে এই এন্ট্রি মুছতে চান?</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="confirmDeleteBtn" class="btn btn-sm" style="background:#d9534f">Delete</button>
+        <button id="cancelDeleteBtn" class="btn btn-sm" style="background:#6c757d">Cancel</button>
+      </div>
     </div>
-</div>
+  </div>
 
-<div id="payTypePopup">
-    <div style="background:white; padding:20px; border-radius:10px; width:250px;">
-        <h3 style="text-align:center;">Filter Pay</h3>
-        <button class="ptBtn" data-type="all" style="width:100%; margin-bottom:10px;">All</button>
-        <button class="ptBtn" data-type="hand" style="width:100%; margin-bottom:10px;">হাত</button>
-        <button class="ptBtn" data-type="bkash" style="width:100%;">বিকাশ</button>
-    </div>
-</div>
+  <!-- aria-live region for screen readers -->
+  <div id="ariaTotals" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
 
-<script type="module">
+  <!-- ============== SCRIPTS (Firebase + App Logic + Enhancements) ============== -->
+  <script type="module">
+    /* ---------- FIREBASE imports ---------- */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+      from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot }
+      from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
-from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot }
-from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    /* ---------- FIREBASE CONFIG (use your own if needed) ---------- */
+    const firebaseConfig = {
+      apiKey: "AIzaSyBADXYUfnJTupNF6FEmRASiHNvZpIpZ_jQ",
+      authDomain: "duret-d9981.firebaseapp.com",
+      projectId: "duret-d9981"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
+    /* ---------- UI refs ---------- */
+    const appWrapper = document.getElementById("appWrapper");
+    const dataTableBody = document.getElementById("dataTableBody");
 
-const firebaseConfig={
-    apiKey:"AIzaSyBADXYUfnJTupNF6FEmRASiHNvZpIpZ_jQ",
-    authDomain:"duret-d9981.firebaseapp.com",
-    projectId:"duret-d9981"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+    const sumRentTop = document.getElementById("sumRentTop");
+    const sumBasicTop = document.getElementById("sumBasicTop");
+    const sumPayTop = document.getElementById("sumPayTop");
+    const sumDueTop = document.getElementById("sumDueTop");
+    const entryCount = document.getElementById("entryCount");
 
-const loginUI=document.getElementById("loginUI");
-const appUI=document.getElementById("appUI");
-const dataModal=document.getElementById("dataModal");
+    const sumRent = document.getElementById("sumRent");
+    const sumBasic = document.getElementById("sumBasic");
+    const sumPay = document.getElementById("sumPay");
+    const sumDue = document.getElementById("sumDue");
+    const sumTotalDue = document.getElementById("sumTotalDue");
 
-const inputDate=document.getElementById("inputDate");
-const inputPlace=document.getElementById("inputPlace");
-const inputRent=document.getElementById("inputRent");
-const inputBasic=document.getElementById("inputBasic");
-const inputPay=document.getElementById("inputPay");
-const inputPayType=document.getElementById("inputPayType");
+    const floatingAdd = document.getElementById("floatingAdd");
+    const addNewBtnHeader = document.getElementById("addNewBtnHeader");
+    const dataModal = document.getElementById("dataModal");
+    const deleteConfirm = document.getElementById("deleteConfirm");
+    const payTypePopup = document.getElementById("payTypePopup");
 
-const autoDay=document.getElementById("autoDay");
-const autoDue=document.getElementById("autoDue");
+    const inputDate = document.getElementById("inputDate");
+    const inputPlace = document.getElementById("inputPlace");
+    const inputRent = document.getElementById("inputRent");
+    const inputRentIncluded = document.getElementById("inputRentIncluded");
+    const inputBasic = document.getElementById("inputBasic");
+    const inputPay = document.getElementById("inputPay");
+    const inputPayType = document.getElementById("inputPayType");
 
+    const payTypeBtns = document.querySelectorAll(".payTypeBtn");
+    const payTypePreview = document.getElementById("payTypePreview");
+    const payTypePreviewText = document.getElementById("payTypePreviewText");
 
-onAuthStateChanged(auth, (user)=>{
-    document.getElementById("authOverlay").style.display="none";
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const confirmBtn = document.getElementById("confirmBtn");
 
-    if(user){
-        loginUI.style.display="none";
-        appUI.style.display="block";
-        loadData(user.uid);
-    } else {
-        loginUI.style.display="block";
-    }
-});
+    const rentHeader = document.getElementById("rentHeader");
+    const payHeader = document.getElementById("payHeader");
 
-document.getElementById("loginBtn").onclick=async()=>{
-    try{
-        await signInWithEmailAndPassword(auth, "Asad@my.com", document.getElementById("password").value);
-    }catch(e){ document.getElementById("errorMsg").innerText="Wrong Password"; }
-};
+    const closeBtns = document.querySelectorAll(".close-btn");
+    const deleteCancelBtn = document.getElementById("cancelDeleteBtn");
+    const deleteConfirmBtn = document.getElementById("confirmDeleteBtn");
 
-document.getElementById("logoutBtn").onclick=()=> signOut(auth);
+    const dataForm = document.getElementById("dataForm");
 
+    /* ---------- app state ---------- */
+    let allData = [];
+    let currentFilter = "all";
+    let rentSelectionMode = false;
+    let lastRenderedList = [];
+    let currentStep = 0;
+    const steps = ["step1","step2","step3","step4","step5"];
+    let uid = null;
+    let idToDelete = null;
 
-const payTypeBtns=document.querySelectorAll(".payTypeBtn");
-
-function setPayType(type){
-    const pay = parseFloat(inputPay.value) || 0;
-
-    if(pay === 0){
-        inputPayType.value = "";
-        return;
+    /* ---------- helpers ---------- */
+    function escapeHtml(s){
+      if(!s && s !== 0) return "";
+      return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'", "&#039;");
     }
 
-    inputPayType.value = type;
+    /* ---------- closePopup (unified) ---------- */
+    let lastFocusedBeforeModal = null;
+    function closePopup() {
+      // hide modals/popups
+      if(payTypePopup) payTypePopup.style.display = "none";
+      if(deleteConfirm){ deleteConfirm.style.display = "none"; deleteConfirm.setAttribute("aria-hidden","true"); releaseFocus(deleteConfirm); }
+      if(dataModal){ dataModal.style.display = "none"; dataModal.setAttribute("aria-hidden","true"); releaseFocus(dataModal); }
 
-    payTypeBtns.forEach(b=>{
-        if(b.dataset.type===type){
-            b.style.background = (type==="bkash") ? "#d9534f" : "#007bff";
-            b.style.color="white";
-        } else {
-            b.style.background="white";
-            b.style.color=(b.dataset.type==="bkash")?"#d9534f":"#007bff";
+      // blur to hide keyboard
+      try{ if(document.activeElement) document.activeElement.blur(); document.querySelectorAll('input, textarea').forEach(i=>i.blur()); } catch(e){}
+
+      // restore focus
+      try{ if(lastFocusedBeforeModal){ lastFocusedBeforeModal.focus(); lastFocusedBeforeModal = null; } } catch(e){}
+    }
+
+    /* ---------- modal focus-trap helpers ---------- */
+    function trapFocus(modalEl){
+      if(!modalEl) return;
+      const focusable = modalEl.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0];
+      const last = focusable[focusable.length -1];
+      function handleKey(e){
+        if(e.key === 'Tab'){
+          if(focusable.length === 0){ e.preventDefault(); return; }
+          if(e.shiftKey){
+            if(document.activeElement === first){ e.preventDefault(); last.focus(); }
+          } else {
+            if(document.activeElement === last){ e.preventDefault(); first.focus(); }
+          }
+        } else if(e.key === 'Escape'){
+          if(deleteConfirm && (deleteConfirm.style.display && deleteConfirm.style.display.indexOf('flex') !== -1)){
+            deleteConfirm.style.display = 'none';
+            deleteConfirm.setAttribute('aria-hidden','true');
+            releaseFocus(deleteConfirm);
+          } else {
+            closePopup();
+          }
         }
-    });
-}
-
-function updatePayTypeButtons(){
-    const pay = parseFloat(inputPay.value) || 0;
-
-    if(pay === 0){
-        inputPayType.value="";
-        payTypeBtns.forEach(btn=>{
-            btn.classList.add("disabled");
-        });
-    } else {
-        payTypeBtns.forEach(btn=>{
-            btn.classList.remove("disabled");
-        });
+      }
+      modalEl._focusHandler = handleKey;
+      modalEl.addEventListener('keydown', handleKey);
+      setTimeout(()=> { if(first) first.focus(); }, 60);
     }
-}
+    function releaseFocus(modalEl){
+      if(!modalEl || !modalEl._focusHandler) return;
+      modalEl.removeEventListener('keydown', modalEl._focusHandler);
+      delete modalEl._focusHandler;
+    }
 
-inputPay.oninput = ()=>{
-    calcDue();
-    updatePayTypeButtons();
-};
-updatePayTypeButtons();
+    /* ---------- openAddModal (reset + trap) ---------- */
+    function openAddModal(){
+      // remember last focus
+      lastFocusedBeforeModal = document.activeElement;
 
+      // reset fields
+      try { dataForm.reset(); } catch(e){}
+      inputDate.value = ""; inputPlace.value = ""; inputRent.value = ""; inputBasic.value = ""; inputPay.value = ""; inputPayType.value = ""; inputRentIncluded.checked = false;
+      payTypePreview.style.display = "none"; payTypePreviewText.innerText = "";
 
-let allData=[];
-let currentFilter="all";
+      // remove editKey if present
+      if(dataForm && dataForm.dataset && dataForm.dataset.editKey) delete dataForm.dataset.editKey;
 
-function loadData(uid){
-    const q=query(collection(db,`users/${uid}/entries`),orderBy("date","asc"));
+      showStep(0);
+      dataModal.style.display = "flex";
+      dataModal.setAttribute("aria-hidden","false");
 
-    onSnapshot(q,snap=>{
-        allData=[];
+      setTimeout(()=> { try{ inputDate.focus({preventScroll:true}); }catch(e){} }, 80);
 
-        snap.forEach(docu=>{
-            const d=docu.data();
-            allData.push({
-                id:docu.id,
-                date:d.date,
-                place:d.place,
-                rent:d.rent||0,
-                basic:d.basic||0,
-                pay:d.pay||0,
-                payType:d.payType||""
-            });
-        });
+      trapFocus(dataModal);
+    }
 
-        applyFilter(currentFilter);
-    });
-}
+    /* ---------- showStep (multi-step) ---------- */
+    function showStep(s){
+      steps.forEach((id,i)=>{
+        const el = document.getElementById(id);
+        if(el) el.style.display = (i === s) ? "block" : "none";
+      });
+      setTimeout(() => {
+        const input = document.querySelector(`#${steps[s]} input:not([type="hidden"])`);
+        if(input){ try{ input.focus({ preventScroll: true }); }catch(e){ input.focus(); } }
+      }, 80);
+      currentStep = s;
+      prevBtn.disabled = s === 0;
+      nextBtn.style.display = (s < steps.length - 1) ? "inline-block" : "none";
+      confirmBtn.style.display = (s === steps.length - 1) ? "inline-block" : "none";
+    }
 
-function renderTable(list){
-    const body=document.getElementById("dataTableBody");
-    body.innerHTML="";
+    /* ---------- calcDue preview ---------- */
+    function calcDue(){
+      const val = ((parseFloat(inputBasic.value)||0) - (parseFloat(inputPay.value)||0)).toFixed(2);
+      const autoDue = document.getElementById("autoDue");
+      if(autoDue) autoDue.innerText = val;
+    }
 
-    let running=0;
+    /* ---------- totals calculation & summary update ---------- */
+    function calcTotals(list){
+      let r=0,b=0,p=0,d=0,t=0;
+      list.forEach(e=>{
+        if(e.rentIncluded) r += (e.rent || 0);
+        b += (e.basic || 0);
+        p += (e.pay || 0);
+        const due = (e.basic || 0) - (e.pay || 0);
+        d += due;
+        t += due;
+      });
+      if(sumRent) sumRent.innerText = r.toFixed(2);
+      if(sumBasic) sumBasic.innerText = b.toFixed(2);
+      if(sumPay) sumPay.innerText = p.toFixed(2);
+      if(sumDue) sumDue.innerText = d.toFixed(2);
+      if(sumTotalDue) sumTotalDue.innerText = t.toFixed(2);
+      if(sumRentTop) sumRentTop.innerText = r.toFixed(2);
+      if(sumBasicTop) sumBasicTop.innerText = b.toFixed(2);
+      if(sumPayTop) sumPayTop.innerText = p.toFixed(2);
+      if(sumDueTop) sumDueTop.innerText = d.toFixed(2);
+      if(entryCount) entryCount.innerText = String(list.length || 0);
 
-    list.forEach(e=>{
-        const due=e.basic-e.pay;
-        running+=due;
+      // announce for screen readers
+      try {
+        const txt = `Rent ${sumRentTop?.innerText||'0'}, Basic ${sumBasicTop?.innerText||'0'}, Pay ${sumPayTop?.innerText||'0'}, Due ${sumDueTop?.innerText||'0'}.`;
+        const live = document.getElementById('ariaTotals');
+        if(live) live.innerText = txt;
+      } catch(e){}
+    }
 
-        let tr=document.createElement("tr");
+    /* ---------- render table ---------- */
+    let renderLock = false;
+    function renderTable(list){
+      if(renderLock) return;
+      renderLock = true;
+      requestAnimationFrame(()=>{
+        lastRenderedList = list.slice();
+        dataTableBody.innerHTML = "";
+        let runningDue = 0;
+        list.forEach(e => {
+          const due = (e.basic || 0) - (e.pay || 0);
+          runningDue += due;
+          let rentCellHtml = "";
+          if (rentSelectionMode) {
+            rentCellHtml = `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="rentCheck" data-id="${e.id}" ${e.rentIncluded ? "checked" : ""} /><span>${(e.rent||0).toFixed(2)}</span></label>`;
+          } else {
+            rentCellHtml = (e.rent || 0).toFixed(2);
+          }
 
-        tr.innerHTML=`
-            <td>${e.date}</td>
-            <td>${ new Date(e.date+"T00:00:00").toLocaleDateString("bn-BD",{weekday:"long"}) }</td>
-            <td>${e.place}</td>
-            <td>${e.rent.toFixed(2)}</td>
-            <td>${e.basic.toFixed(2)}</td>
+          let payBadge = "";
+          if (e.payType === "hand") payBadge = `<span class="pay-badge hand">হাত</span>`;
+          else if (e.payType === "bkash") payBadge = `<span class="pay-badge bkash">বিকাশ</span>`;
 
-            <td>
-                ${e.pay.toFixed(2)}
-                <small>
-                    ${
-                        e.payType
-                        ? (e.payType=="bkash" ? "বিকাশ" : "হাত")
-                        : ""
-                    }
-                </small>
-            </td>
+          const actionHtml = `<div style="display:flex;gap:8px;justify-content:center">
+            <button class="icon-btn edit" data-id="${e.id}" title="Edit">✏️</button>
+            <button class="icon-btn delete" data-id="${e.id}" title="Delete">🗑️</button>
+          </div>`;
 
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${e.date}</td>
+            <td>${ new Date(e.date + "T00:00:00").toLocaleDateString("bn-BD", { weekday: "long" }) }</td>
+            <td>${escapeHtml(e.place)}</td>
+            <td>${rentCellHtml}</td>
+            <td>${(e.basic||0).toFixed(2)}</td>
+            <td class="payCell" style="cursor:pointer">${(e.pay||0).toFixed(2)} <small>${payBadge}</small></td>
             <td>${due.toFixed(2)}</td>
-            <td>${running.toFixed(2)}</td>
+            <td>${runningDue.toFixed(2)}</td>
+            <td>${actionHtml}</td>`;
+          dataTableBody.appendChild(tr);
+        });
 
-            <td>
-                <button class="editBtn" data-id="${e.id}">Edit</button>
-                <button class="deleteBtn" style="background:#dc3545;" data-id="${e.id}">Delete</button>
-            </td>
-        `;
+        // handlers
+        document.querySelectorAll(".delete").forEach(btn => {
+          btn.onclick = () => {
+            idToDelete = btn.dataset.id;
+            deleteConfirm.style.display = "flex";
+            deleteConfirm.setAttribute("aria-hidden","false");
+            lastFocusedBeforeModal = document.activeElement;
+            trapFocus(deleteConfirm);
+          };
+        });
 
-        body.appendChild(tr);
-    });
+        document.querySelectorAll(".edit").forEach(btn => {
+          btn.onclick = () => openEdit(btn.dataset.id);
+        });
 
-    document.querySelectorAll(".deleteBtn").forEach(btn=>{
-        btn.onclick=()=> deleteDoc(doc(db,`users/${auth.currentUser.uid}/entries`,btn.dataset.id));
-    });
+        document.querySelectorAll(".payCell").forEach(cell => {
+          cell.onclick = () => { if(payTypePopup) payTypePopup.style.display = "flex"; };
+        });
 
-    document.querySelectorAll(".editBtn").forEach(btn=>{
-        btn.onclick=()=> openEdit(btn.dataset.id);
-    });
+        document.querySelectorAll(".rentCheck").forEach(chk => {
+          chk.onchange = async () => {
+            const id = chk.dataset.id;
+            try{ await updateDoc(doc(db, `users/${auth.currentUser.uid}/entries`, id), { rentIncluded: chk.checked }); }catch(err){console.error("upd rentIncluded",err);}
+            const local = allData.find(x=> x.id === id); if(local) local.rentIncluded = chk.checked; calcTotals(lastRenderedList);
+          };
+        });
 
-    calcTotals(list);
-}
-
-function calcTotals(list){
-    let r=0,b=0,p=0,d=0,t=0;
-
-    list.forEach(e=>{
-        r+=e.rent;
-        b+=e.basic;
-        p+=e.pay;
-
-        const due=e.basic-e.pay;
-        d+=due;
-        t+=due;
-    });
-
-    sumRent.innerText=r.toFixed(2);
-    sumBasic.innerText=b.toFixed(2);
-    sumPay.innerText=p.toFixed(2);
-    sumDue.innerText=d.toFixed(2);
-    sumTotalDue.innerText=t.toFixed(2);
-}
-
-document.getElementById("payHeader").onclick=()=>{
-    document.getElementById("payTypePopup").style.display="flex";
-};
-
-document.querySelectorAll(".ptBtn").forEach(b=>{
-    b.onclick=()=>{
-        applyFilter(b.dataset.type);
-        document.getElementById("payTypePopup").style.display="none";
-    };
-});
-
-function applyFilter(type){
-    currentFilter=type;
-    let list=allData;
-
-    if(type==="hand") list=allData.filter(a=>a.payType==="hand");
-    if(type==="bkash") list=allData.filter(a=>a.payType==="bkash");
-
-    renderTable(list);
-}
-
-
-document.getElementById("addNewBtn").onclick=()=>{
-    dataForm.reset();
-    delete dataForm.dataset.editKey;
-
-    inputPayType.value="";
-    updatePayTypeButtons();
-
-    currentStep=0;
-    showStep(0);
-    dataModal.style.display="flex";
-};
-
-document.querySelector(".close-btn").onclick=()=> dataModal.style.display="none";
-
-
-let currentStep=0;
-const steps=["step1","step2","step3","step4","step5"];
-
-function showStep(s){
-    steps.forEach((id,i)=>{
-        document.getElementById(id).style.display=i===s?"block":"none";
-    });
-
-    prevBtn.disabled = s===0;
-    nextBtn.style.display = (s<4)?"inline-block":"none";
-    confirmBtn.style.display = (s===4)?"inline-block":"none";
-}
-
-showStep(0);
-
-prevBtn.onclick=()=>{ if(currentStep>0){ currentStep--; showStep(currentStep);} };
-nextBtn.onclick=()=>{ if(currentStep<4){ currentStep++; showStep(currentStep);} };
-
-inputDate.onchange=()=>{
-    const d=new Date(inputDate.value+"T00:00:00");
-    autoDay.innerText=d.toLocaleDateString("bn-BD",{weekday:"long"});
-};
-
-function calcDue(){
-    const b=parseFloat(inputBasic.value)||0;
-    const p=parseFloat(inputPay.value)||0;
-    autoDue.innerText=(b-p).toFixed(2);
-}
-inputBasic.oninput=calcDue;
-inputPay.oninput=calcDue;
-
-
-dataForm.onsubmit=async(e)=>{
-    e.preventDefault();
-    const uid=auth.currentUser.uid;
-
-    const data={
-        date:inputDate.value,
-        place:inputPlace.value,
-        rent:+inputRent.value,
-        basic:+inputBasic.value,
-        pay:+inputPay.value,
-        payType:inputPayType.value || ""
-    };
-
-    if(dataForm.dataset.editKey){
-        await updateDoc(doc(db,`users/${uid}/entries`,dataForm.dataset.editKey),data);
-        delete dataForm.dataset.editKey;
-    } else {
-        await addDoc(collection(db,`users/${uid}/entries`),data);
+        calcTotals(list);
+        renderLock = false;
+      });
     }
 
-    dataModal.style.display="none";
-};
+    /* ---------- apply filter ---------- */
+    function applyFilter(type){
+      currentFilter = type;
+      let list = allData.slice();
+      if(type === "hand") list = list.filter(a => a.payType === "hand");
+      if(type === "bkash") list = list.filter(a => a.payType === "bkash");
+      renderTable(list);
+    }
 
-function openEdit(id){
-    const e=allData.find(x=>x.id===id);
+    /* ---------- pay type UI logic ---------- */
+    function updatePayTypeButtons() {
+      const pay = parseFloat(inputPay.value) || 0;
+      payTypeBtns.forEach(btn => {
+        if(pay === 0) btn.classList.add("disabled"); else btn.classList.remove("disabled");
+      });
+    }
 
-    inputDate.value=e.date;
-    inputPlace.value=e.place;
-    inputRent.value=e.rent;
-    inputBasic.value=e.basic;
-    inputPay.value=e.pay;
+    function setPayType(type){
+      const pay = parseFloat(inputPay.value) || 0;
+      if(pay === 0){ inputPayType.value = ""; payTypeBtns.forEach(b => b.classList.remove("selected")); payTypePreview.style.display = "none"; return; }
+      inputPayType.value = type;
+      payTypeBtns.forEach(b => { if(b.dataset.type === type) b.classList.add("selected"); else b.classList.remove("selected"); });
+      payTypePreview.style.display = "inline-flex";
+      const label = (type === "hand") ? "হাত" : (type === "bkash") ? "বিকাশ" : "";
+      payTypePreviewText.innerText = label;
+      payTypePreviewText.className = "pay-badge " + (type === "hand" ? "hand" : "bkash");
+    }
 
-    inputPayType.value=e.payType || "";
-    updatePayTypeButtons();
-    setPayType(e.payType);
+    /* ---------- Add/Edit/Save handlers ---------- */
+    addNewBtnHeader.onclick = floatingAdd.onclick = openAddModal;
+    closeBtns.forEach(btn => btn.onclick = closePopup);
+    prevBtn && (prevBtn.onclick = ()=> { if(currentStep>0) showStep(currentStep-1); });
+    nextBtn && (nextBtn.onclick = ()=> { if(currentStep<steps.length-1) showStep(currentStep+1); });
 
-    calcDue();
+    document.querySelectorAll(".ptBtn").forEach(b => { b.onclick = () => { applyFilter(b.dataset.type); if(payTypePopup) payTypePopup.style.display = "none"; }; });
 
-    dataForm.dataset.editKey=id;
+    payTypeBtns.forEach(b => {
+      b.onclick = () => {
+        const pay = parseFloat(inputPay.value) || 0;
+        if(pay === 0){ alert("Pay এর মান 0 হলে Pay Type নির্বাচন করা যাবে না!"); return; }
+        setPayType(b.dataset.type);
+      };
+    });
 
-    currentStep=0;
+    inputPay && (inputPay.oninput = () => { calcDue(); updatePayTypeButtons(); });
+
+    dataForm.onsubmit = async (ev) => {
+      ev.preventDefault();
+      if(!auth.currentUser){ alert("User not logged in"); return; }
+      const uidLocal = auth.currentUser.uid;
+      const payload = {
+        date: inputDate.value || "",
+        place: inputPlace.value || "",
+        rent: Number(inputRent.value || 0),
+        basic: Number(inputBasic.value || 0),
+        pay: Number(inputPay.value || 0),
+        payType: inputPayType.value || "",
+        rentIncluded: !!inputRentIncluded.checked
+      };
+      try{
+        if(dataForm.dataset.editKey){
+          await updateDoc(doc(db, `users/${uidLocal}/entries`, dataForm.dataset.editKey), payload);
+          delete dataForm.dataset.editKey;
+        } else {
+          await addDoc(collection(db, `users/${uidLocal}/entries`), payload);
+        }
+      }catch(err){
+        console.error("save error:", err);
+        alert("Save failed");
+      } finally {
+        closePopup();
+      }
+    };
+
+    /* ---------- open edit ---------- */
+    function openEdit(id){
+      const e = allData.find(x=> x.id === id);
+      if(!e) return;
+      inputDate.value = e.date || "";
+      inputPlace.value = e.place || "";
+      inputRent.value = e.rent || "";
+      inputBasic.value = e.basic || "";
+      inputPay.value = e.pay || "";
+      inputPayType.value = e.payType || "";
+      inputRentIncluded.checked = !!e.rentIncluded;
+      updatePayTypeButtons();
+      setPayType(e.payType);
+      calcDue();
+      dataForm.dataset.editKey = id;
+      showStep(0);
+      dataModal.style.display = "flex";
+      dataModal.setAttribute("aria-hidden","false");
+      lastFocusedBeforeModal = document.activeElement;
+      trapFocus(dataModal);
+      setTimeout(()=> { try{ inputDate.focus({preventScroll:true}); }catch(e){} },80);
+    }
+
+    /* ---------- Delete confirm handlers ---------- */
+    deleteCancelBtn.onclick = () => {
+      idToDelete = null;
+      deleteConfirm.style.display = "none";
+      deleteConfirm.setAttribute("aria-hidden","true");
+      releaseFocus(deleteConfirm);
+    };
+    deleteConfirmBtn.onclick = async () => {
+      if(!idToDelete) return;
+      try{
+        await deleteDoc(doc(db, `users/${auth.currentUser.uid}/entries`, idToDelete));
+        idToDelete = null;
+      }catch(err){
+        console.error("delete err", err);
+        alert("Delete failed");
+      } finally {
+        deleteConfirm.style.display = "none";
+        deleteConfirm.setAttribute("aria-hidden","true");
+        releaseFocus(deleteConfirm);
+      }
+    };
+
+    /* ---------- Overlay click to close ---------- */
+    dataModal.addEventListener("click", (ev)=>{ if(ev.target === dataModal) closePopup(); });
+    deleteConfirm.addEventListener("click", (ev)=>{ if(ev.target === deleteConfirm){ idToDelete = null; closePopup(); } });
+    payTypePopup && payTypePopup.addEventListener("click", (ev)=>{ if(ev.target === payTypePopup) payTypePopup.style.display = "none"; });
+
+    /* ---------- rent header toggle ---------- */
+    rentHeader && (rentHeader.onclick = () => {
+      rentSelectionMode = !rentSelectionMode;
+      rentHeader.classList.toggle("active", rentSelectionMode);
+      applyFilter(currentFilter);
+    });
+
+    /* ---------- payHeader opens filter popup ---------- */
+    payHeader && (payHeader.onclick = () => { if(payTypePopup) payTypePopup.style.display = "flex"; });
+
+    /* ---------- safeguard: prevent Enter bubbling outside modal ---------- */
+    document.addEventListener("keydown", (ev)=>{ if(ev.key === "Enter" && dataModal.style.display === "flex") ev.stopPropagation(); });
+
+    /* ---------- snapshot listener (load data) ---------- */
+    onAuthStateChanged(auth, (user) => {
+      if(user){
+        uid = user.uid;
+        // subscribe to entries
+        const q = query(collection(db, `users/${uid}/entries`), orderBy("date","asc"));
+        onSnapshot(q, (snap) => {
+          allData = [];
+          snap.forEach(d => {
+            const obj = d.data();
+            allData.push({
+              id: d.id,
+              date: obj.date || "",
+              place: obj.place || "",
+              rent: Number(obj.rent || 0),
+              basic: Number(obj.basic || 0),
+              pay: Number(obj.pay || 0),
+              payType: obj.payType || "",
+              rentIncluded: !!obj.rentIncluded
+            });
+          });
+          applyFilter(currentFilter);
+        }, (err) => {
+          console.error("snapshot err:", err);
+        });
+      } else {
+        // not logged in: clear UI
+        allData = [];
+        renderTable([]);
+      }
+    });
+
+    /* ---------- initial UI state ---------- */
     showStep(0);
-    dataModal.style.display="flex";
-}
+    calcDue();
+    updatePayTypeButtons();
 
-</script>
+    /* ---------- small keyboard shortcuts ---------- */
+    document.addEventListener('keydown', (e)=>{
+      const tag = document.activeElement && document.activeElement.tagName;
+      if(tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+      if(e.key === 'n' || e.key === 'N'){ e.preventDefault(); openAddModal(); }
+      if(e.key === 'Escape'){ closePopup(); }
+    });
 
+    /* ---------- beforeunload cleanup ---------- */
+    window.addEventListener("beforeunload", ()=>{ try{ releaseFocus(dataModal); releaseFocus(deleteConfirm); }catch(e){} });
+
+  </script>
 </body>
 </html>
