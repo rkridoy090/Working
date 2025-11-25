@@ -3,463 +3,488 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>দৈনিক হিসাব অ্যাপ (Firestore)</title>
+    <title>দৈনিক হিসাব অ্যাপ</title>
+
     <style>
-        /* --- CSS Start --- */
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
-        .container { max-width: 1200px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .login-container { max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        h1 { color: #007bff; }
-        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
-        button:hover { background-color: #0056b3; }
-        
-        /* Table Container for Horizontal Scroll on Small Screens */
-        .table-container { overflow-x: auto; margin-top: 20px; }
-        .data-table { width: 100%; min-width: 700px; /* Ensure horizontal scroll on small screens */ border-collapse: collapse; }
-        .data-table th, .data-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .data-table th { background-color: #f2f2f2; }
-        .action-btns button { padding: 5px 10px; margin: 0 2px; }
+        body { font-family: Arial; margin:0; padding:0; background:#f4f4f4; }
+        .container { max-width:1200px; margin:20px auto; background:white; padding:20px; border-radius:8px; }
 
-        /* Popup Modal CSS (Unchanged) */
-        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; }
-        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
-        .close-btn:hover, .close-btn:focus { color: #000; text-decoration: none; cursor: pointer; }
-        .popup-step-content { display: none; }
-        .popup-controls { margin-top: 15px; display: flex; justify-content: space-between; }
-        .popup-controls button:disabled { background-color: #aaa; cursor: not-allowed; }
-        
-        input[type="text"], input[type="number"], input[type="date"], input[type="password"] {
-            width: 100%; 
-            padding: 8px; 
-            margin-top: 5px;
-            box-sizing: border-box; 
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
+        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+        h1 { color:#007bff; }
 
-        /* --- Responsive Table (Small Screen / Portrait Mode) --- */
-        /* আগের কোডগুলি ডেটা হাইড করে দিত। এখন টেবিলের মধ্যে সব ডেটা থাকবে, কিন্তু ছোট স্ক্রিনে স্ক্রল করা যাবে। */
-        @media (max-width: 768px) {
-            /* Enable horizontal scrolling for the table container */
-            .table-container {
-                overflow-x: scroll;
-            }
-            /* Make sure the table takes enough minimum width to show all columns */
-            .data-table {
-                min-width: 800px; 
-            }
-            /* Optional: You can reduce padding for tighter display on mobile */
-            .data-table th, .data-table td {
-                padding: 6px;
-                font-size: 14px;
-            }
+        button { padding:10px 15px; border:none; border-radius:5px; background:#007bff; color:white; cursor:pointer; }
+        button:hover { background:#0056b3; }
+
+        #authOverlay { position:fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:9999; }
+        .colorful-loader { width:60px; height:60px; border:8px solid #f3f3f3; border-radius:50%; border-top:8px solid #FF5733; border-right:8px solid #C70039; border-bottom:8px solid #900C3F; border-left:8px solid #FFC300; animation:spin 1s linear infinite; }
+        @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+        .waiting-text { margin-top:20px; font-size:18px; font-weight:bold; background:linear-gradient(to right,#FF5733,#FFC300,#33FF57,#3380FF); -webkit-background-clip:text; color:transparent; }
+
+        .login-container { max-width:400px; margin:70px auto; background:white; padding:25px; border-radius:10px; text-align:center; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+
+        .table-container { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; min-width:780px; }
+        th,td { border:1px solid #ddd; padding:8px; text-align:left; }
+        th { background:#f2f2f2; }
+
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); align-items:center; justify-content:center; }
+        .modal-content { background:white; padding:20px; width:90%; max-width:500px; border-radius:10px; position:relative; }
+        .close-btn { position:absolute; top:10px; right:15px; font-size:28px; cursor:pointer; }
+
+        .popup-step-content { display:none; }
+
+        .popup-controls { display:flex; justify-content:space-between; margin-top:25px; }
+
+        #payTypePopup { display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4); justify-content:center; align-items:center; z-index:10000; }
+
+        .payTypeBtn.disabled { opacity:0.4; pointer-events:none; }
+
+        @media(max-width:768px){
+            table { min-width:900px; }
         }
-        /* --- CSS End --- */
     </style>
 </head>
+
 <body>
 
-    <div class="login-container" id="loginUI">
-        <h2>লগইন</h2>
-        <input type="email" id="email" value="Asad@my.com" style="display: none;">
-        <p style="text-align: center; margin-bottom: 10px;">লগইন ইমেইল: <strong>Asad@my.com</strong></p>
-        <input type="password" id="password" placeholder="Password" required>
-        <button id="loginBtn">লগইন</button>
-        <p id="errorMsg" style="color: red; margin-top: 10px;"></p>
+<div id="authOverlay">
+    <div class="colorful-loader"></div>
+    <div class="waiting-text">Waiting please...</div>
+</div>
+
+<div id="loginUI" class="login-container" style="display:none;">
+    <h2>Login</h2>
+    <p>Email: <b>Asad@my.com</b></p>
+    <input type="password" id="password" placeholder="Password" style="width:100%; padding:10px;">
+    <button id="loginBtn" style="width:100%; margin-top:10px;">Login</button>
+    <p id="errorMsg" style="color:red; margin-top:10px;"></p>
+</div>
+
+<div id="appUI" class="container" style="display:none;">
+
+    <div class="header">
+        <h1>দৈনিক হিসাব</h1>
+
+        <div>
+            <button id="addNewBtn">➕ Add</button>
+            <button id="logoutBtn" style="background:#dc3545;">Logout</button>
+        </div>
     </div>
 
-    <div class="container" id="appUI" style="display: none;">
-        <div class="header">
-            <h1>দৈনিক হিসাব</h1>
-            <div>
-                <button id="addNewBtn">➕ Add New</button>
-                <button id="logoutBtn" style="background-color: #dc3545;">Logout</button>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Place</th>
+                    <th>Rent</th>
+                    <th>Basic</th>
+                    <th id="payHeader" style="cursor:pointer; color:#007bff;">Pay</th>
+                    <th>Due</th>
+                    <th>Total Due</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="dataTableBody"></tbody>
+
+            <tr style="background:#ffe599; font-weight:bold;">
+                <td colspan="3" style="text-align:center;">Total</td>
+                <td id="sumRent">0</td>
+                <td id="sumBasic">0</td>
+                <td id="sumPay">0</td>
+                <td id="sumDue">0</td>
+                <td id="sumTotalDue">0</td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+
+</div>
+
+<div id="dataModal" class="modal">
+    <div class="modal-content">
+
+        <span class="close-btn">&times;</span>
+        <h2>নতুন এন্ট্রি</h2>
+
+        <form id="dataForm">
+
+            <div id="step1" class="popup-step-content">
+                <label>Date</label>
+                <input type="date" id="inputDate">
+                <p>Day: <b id="autoDay"></b></p>
             </div>
-        </div>
 
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Day</th>
-                        <th>Place</th>
-                        <th>Rent</th>
-                        <th>Basic</th>
-                        <th>Pay</th>
-                        <th>Due</th>
-                        <th>Total Due</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="dataTableBody">
-                    </tbody>
-            </table>
-        </div>
+            <div id="step2" class="popup-step-content">
+                <label>Place</label>
+                <input type="text" id="inputPlace">
+            </div>
+
+            <div id="step3" class="popup-step-content">
+                <label>Rent</label>
+                <input type="number" id="inputRent" value="0">
+            </div>
+
+            <div id="step4" class="popup-step-content">
+                <label>Basic</label>
+                <input type="number" id="inputBasic" value="0">
+            </div>
+
+            <div id="step5" class="popup-step-content">
+                <label>Pay</label>
+                <input type="number" id="inputPay" value="0">
+                <p>Due: <b id="autoDue"></b></p>
+
+                <p style="font-weight:bold;">Pay Type</p>
+
+                <div style="display:flex; gap:10px;">
+                    <button type="button" class="payTypeBtn" data-type="hand"
+                        style="flex:1; border:1px solid #007bff; background:white; color:#007bff;">
+                        হাত
+                    </button>
+                    <button type="button" class="payTypeBtn" data-type="bkash"
+                        style="flex:1; border:1px solid #d9534f; background:white; color:#d9534f;">
+                        বিকাশ
+                    </button>
+                </div>
+
+                <input type="hidden" id="inputPayType" value="">
+            </div>
+
+            <div class="popup-controls">
+                <button type="button" id="prevBtn" style="background:#6c757d;">Previous</button>
+                <button type="button" id="nextBtn">Next</button>
+                <button id="confirmBtn" type="submit" style="display:none;">Save</button>
+            </div>
+
+        </form>
     </div>
+</div>
 
-    <div id="dataModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>নতুন এন্ট্রি যোগ করুন</h2>
-            <form id="dataForm">
-                
-                <div class="popup-step-content" id="step1">
-                    <label for="inputDate">তারিখ (Date):</label>
-                    <input type="date" id="inputDate" required>
-                    <p>স্বয়ংক্রিয় দিন: <strong id="autoDay"></strong></p>
-                </div>
-                <div class="popup-step-content" id="step2">
-                    <label for="inputPlace">স্থানের নাম (Place):</label>
-                    <input type="text" id="inputPlace" required>
-                </div>
-                <div class="popup-step-content" id="step3">
-                    <label for="inputRent">ভাড়া (Rent):</label>
-                    <input type="number" id="inputRent" required value="0">
-                </div>
-                <div class="popup-step-content" id="step4">
-                    <label for="inputBasic">বেসিক (Basic Income):</label>
-                    <input type="number" id="inputBasic" required value="0">
-                </div>
-                <div class="popup-step-content" id="step5">
-                    <label for="inputPay">পেমেন্ট (Payment Made):</label>
-                    <input type="number" id="inputPay" required value="0">
-                    <p>স্বয়ংক্রিয় ডিউ: <strong id="autoDue"></strong></p>
-                </div>
-
-                <div class="popup-controls">
-                    <button type="button" id="prevBtn" style="background-color: #6c757d;">Previous</button>
-                    <button type="button" id="nextBtn">Next</button>
-                    <button type="submit" id="confirmBtn" style="display: none;">Confirmed</button>
-                </div>
-            </form>
-        </div>
+<div id="payTypePopup">
+    <div style="background:white; padding:20px; border-radius:10px; width:250px;">
+        <h3 style="text-align:center;">Filter Pay</h3>
+        <button class="ptBtn" data-type="all" style="width:100%; margin-bottom:10px;">All</button>
+        <button class="ptBtn" data-type="hand" style="width:100%; margin-bottom:10px;">হাত</button>
+        <button class="ptBtn" data-type="bkash" style="width:100%;">বিকাশ</button>
     </div>
+</div>
 
-    <script type="module">
-        // Import the functions you need from the SDKs (Now including Firestore)
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+<script type="module">
 
-        // *** আপনার Firebase Config এখানে দেওয়া হলো ***
-        const firebaseConfig = {
-            apiKey: "AIzaSyBADXYUfnJTupNF6FEmRASiHNvZpIpZ_jQ",
-            authDomain: "duret-d9981.firebaseapp.com",
-            projectId: "duret-d9981",
-            storageBucket: "duret-d9981.firebasestorage.app",
-            messagingSenderId: "97759834980",
-            appId: "1:97759834980:web:34b6a91e5b6797107c8071",
-            measurementId: "G-H6RRZ1SEH9"
-        };
-        // *** আপনার কোড শুরু হবে ***
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app); // Initialize Firestore
-
-        // --- DOM Elements (Unchanged) ---
-        const loginUI = document.getElementById('loginUI');
-        const appUI = document.getElementById('appUI');
-        const passwordInput = document.getElementById('password');
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const addNewBtn = document.getElementById('addNewBtn');
-        const dataModal = document.getElementById('dataModal');
-        const closeBtn = document.querySelector('.close-btn');
-        const dataForm = document.getElementById('dataForm');
-        const dataTableBody = document.getElementById('dataTableBody');
-        const errorMsg = document.getElementById('errorMsg');
-
-        // Popup Step Control (Unchanged)
-        const steps = ['step1', 'step2', 'step3', 'step4', 'step5'];
-        let currentStep = 0;
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const confirmBtn = document.getElementById('confirmBtn');
-
-        // Data Inputs (Unchanged)
-        const inputDate = document.getElementById('inputDate');
-        const autoDay = document.getElementById('autoDay');
-        const inputPlace = document.getElementById('inputPlace');
-        const inputRent = document.getElementById('inputRent');
-        const inputBasic = document.getElementById('inputBasic');
-        const inputPay = document.getElementById('inputPay');
-        const autoDue = document.getElementById('autoDue');
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot }
+from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 
-        // --- Authentication (Unchanged) ---
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loginUI.style.display = 'none';
-                appUI.style.display = 'block';
-                errorMsg.textContent = '';
-                loadData(user.uid);
-            } else {
-                loginUI.style.display = 'block';
-                appUI.style.display = 'none';
-            }
+const firebaseConfig={
+    apiKey:"AIzaSyBADXYUfnJTupNF6FEmRASiHNvZpIpZ_jQ",
+    authDomain:"duret-d9981.firebaseapp.com",
+    projectId:"duret-d9981"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const loginUI=document.getElementById("loginUI");
+const appUI=document.getElementById("appUI");
+const dataModal=document.getElementById("dataModal");
+
+const inputDate=document.getElementById("inputDate");
+const inputPlace=document.getElementById("inputPlace");
+const inputRent=document.getElementById("inputRent");
+const inputBasic=document.getElementById("inputBasic");
+const inputPay=document.getElementById("inputPay");
+const inputPayType=document.getElementById("inputPayType");
+
+const autoDay=document.getElementById("autoDay");
+const autoDue=document.getElementById("autoDue");
+
+
+onAuthStateChanged(auth, (user)=>{
+    document.getElementById("authOverlay").style.display="none";
+
+    if(user){
+        loginUI.style.display="none";
+        appUI.style.display="block";
+        loadData(user.uid);
+    } else {
+        loginUI.style.display="block";
+    }
+});
+
+document.getElementById("loginBtn").onclick=async()=>{
+    try{
+        await signInWithEmailAndPassword(auth, "Asad@my.com", document.getElementById("password").value);
+    }catch(e){ document.getElementById("errorMsg").innerText="Wrong Password"; }
+};
+
+document.getElementById("logoutBtn").onclick=()=> signOut(auth);
+
+
+const payTypeBtns=document.querySelectorAll(".payTypeBtn");
+
+function setPayType(type){
+    const pay = parseFloat(inputPay.value) || 0;
+
+    if(pay === 0){
+        inputPayType.value = "";
+        return;
+    }
+
+    inputPayType.value = type;
+
+    payTypeBtns.forEach(b=>{
+        if(b.dataset.type===type){
+            b.style.background = (type==="bkash") ? "#d9534f" : "#007bff";
+            b.style.color="white";
+        } else {
+            b.style.background="white";
+            b.style.color=(b.dataset.type==="bkash")?"#d9534f":"#007bff";
+        }
+    });
+}
+
+function updatePayTypeButtons(){
+    const pay = parseFloat(inputPay.value) || 0;
+
+    if(pay === 0){
+        inputPayType.value="";
+        payTypeBtns.forEach(btn=>{
+            btn.classList.add("disabled");
         });
-
-        loginBtn.addEventListener('click', async () => {
-            const email = 'Asad@my.com'; 
-            const password = passwordInput.value;
-            errorMsg.textContent = '';
-            
-            if (!password) {
-                errorMsg.textContent = 'পাসওয়ার্ড দিন।';
-                return;
-            }
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                if(error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    errorMsg.textContent = 'লগইন ব্যর্থ। পাসওয়ার্ড ভুল।';
-                } else {
-                     errorMsg.textContent = 'লগইন ব্যর্থ হয়েছে: ' + error.message;
-                }
-            }
+    } else {
+        payTypeBtns.forEach(btn=>{
+            btn.classList.remove("disabled");
         });
+    }
+}
 
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth).catch((error) => {
-                console.error("Logout Error:", error);
-                alert('Logout failed: ' + error.message);
+inputPay.oninput = ()=>{
+    calcDue();
+    updatePayTypeButtons();
+};
+updatePayTypeButtons();
+
+
+let allData=[];
+let currentFilter="all";
+
+function loadData(uid){
+    const q=query(collection(db,`users/${uid}/entries`),orderBy("date","asc"));
+
+    onSnapshot(q,snap=>{
+        allData=[];
+
+        snap.forEach(docu=>{
+            const d=docu.data();
+            allData.push({
+                id:docu.id,
+                date:d.date,
+                place:d.place,
+                rent:d.rent||0,
+                basic:d.basic||0,
+                pay:d.pay||0,
+                payType:d.payType||""
             });
         });
 
-        // --- Data Logic (UPDATED for Firestore) ---
+        applyFilter(currentFilter);
+    });
+}
 
-        let allData = []; // To store the latest data and calculate Total Due
+function renderTable(list){
+    const body=document.getElementById("dataTableBody");
+    body.innerHTML="";
 
-        // Function to load and display data (Uses Firestore real-time listener)
-        function loadData(userId) {
-            // Collection reference specific to the logged-in user
-            const userEntriesRef = collection(db, `users/${userId}/entries`);
-            
-            // Query to order by date
-            const q = query(userEntriesRef, orderBy("date", "asc"));
+    let running=0;
 
-            // Real-time listener for Firestore
-            onSnapshot(q, (snapshot) => {
-                allData = [];
-                snapshot.forEach((doc) => {
-                    // Store entry data along with its Firestore document ID (key)
-                    allData.push({ id: doc.id, ...doc.data() });
-                });
-                renderTable(allData);
-            }, (error) => {
-                console.error("Firestore Listener Error:", error);
-                alert("ডেটা লোড করতে সমস্যা হয়েছে: " + error.message);
-            });
-        }
-        
-        // Logic 1 & 2 (Unchanged)
-        inputDate.addEventListener('change', () => {
-            const dateStr = inputDate.value;
-            if (dateStr) {
-                const dateObj = new Date(dateStr + 'T00:00:00'); // Ensure date object is created correctly
-                const dayName = dateObj.toLocaleDateString('bn-BD', { weekday: 'long' });
-                autoDay.textContent = dayName;
-            } else {
-                autoDay.textContent = '';
-            }
-        });
+    list.forEach(e=>{
+        const due=e.basic-e.pay;
+        running+=due;
 
-        function calculateDue() {
-            const basic = parseFloat(inputBasic.value) || 0;
-            const pay = parseFloat(inputPay.value) || 0;
-            const due = basic - pay;
-            autoDue.textContent = due.toFixed(2);
-            return due;
-        }
+        let tr=document.createElement("tr");
 
-        inputBasic.addEventListener('input', calculateDue);
-        inputPay.addEventListener('input', calculateDue);
+        tr.innerHTML=`
+            <td>${e.date}</td>
+            <td>${ new Date(e.date+"T00:00:00").toLocaleDateString("bn-BD",{weekday:"long"}) }</td>
+            <td>${e.place}</td>
+            <td>${e.rent.toFixed(2)}</td>
+            <td>${e.basic.toFixed(2)}</td>
 
+            <td>
+                ${e.pay.toFixed(2)}
+                <small>
+                    ${
+                        e.payType
+                        ? (e.payType=="bkash" ? "বিকাশ" : "হাত")
+                        : ""
+                    }
+                </small>
+            </td>
 
-        // Render Table Function
-        function renderTable(data) {
-            dataTableBody.innerHTML = '';
-            let previousTotalDue = 0;
+            <td>${due.toFixed(2)}</td>
+            <td>${running.toFixed(2)}</td>
 
-            if (data.length === 0) {
-                 dataTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">কোনো ডেটা পাওয়া যায়নি।</td></tr>';
-                 return;
-            }
+            <td>
+                <button class="editBtn" data-id="${e.id}">Edit</button>
+                <button class="deleteBtn" style="background:#dc3545;" data-id="${e.id}">Delete</button>
+            </td>
+        `;
 
-            data.forEach(entry => {
-                
-                // Logic 3: Total Due Calculation
-                const currentDue = entry.basic - entry.pay;
-                const totalDue = previousTotalDue + currentDue;
-                previousTotalDue = totalDue;
+        body.appendChild(tr);
+    });
 
-                // Date and Day Name
-                const dateObj = new Date(entry.date + 'T00:00:00');
-                const dayName = dateObj.toLocaleDateString('bn-BD', { weekday: 'long' });
+    document.querySelectorAll(".deleteBtn").forEach(btn=>{
+        btn.onclick=()=> deleteDoc(doc(db,`users/${auth.currentUser.uid}/entries`,btn.dataset.id));
+    });
 
-                const row = dataTableBody.insertRow();
-                row.innerHTML = `
-                    <td data-label="Date">${entry.date}</td>
-                    <td data-label="Day">${dayName}</td>
-                    <td data-label="Place">${entry.place}</td>
-                    <td data-label="Rent">${entry.rent.toFixed(2)}</td>
-                    <td data-label="Basic">${entry.basic.toFixed(2)}</td>
-                    <td data-label="Pay">${entry.pay.toFixed(2)}</td>
-                    <td data-label="Due">${currentDue.toFixed(2)}</td>
-                    <td data-label="Total Due">${totalDue.toFixed(2)}</td>
-                    <td data-label="Action" class="action-btns">
-                        <button class="editBtn" data-id="${entry.id}">Edit</button>
-                        <button class="deleteBtn" data-id="${entry.id}" style="background-color: #dc3545;">Delete</button>
-                    </td>
-                `;
-            });
-            // Attach event listeners to new buttons
-            document.querySelectorAll('.editBtn').forEach(btn => btn.addEventListener('click', handleEdit));
-            document.querySelectorAll('.deleteBtn').forEach(btn => btn.addEventListener('click', handleDelete));
-        }
+    document.querySelectorAll(".editBtn").forEach(btn=>{
+        btn.onclick=()=> openEdit(btn.dataset.id);
+    });
 
-        // --- CRUD Operations Handlers (UPDATED for Firestore) ---
+    calcTotals(list);
+}
 
-        function handleEdit(e) {
-            const key = e.target.dataset.id;
-            const entry = allData.find(item => item.id === key);
-            if (!entry) return;
+function calcTotals(list){
+    let r=0,b=0,p=0,d=0,t=0;
 
-            // Populate form for editing
-            document.getElementById('inputDate').value = entry.date;
-            document.getElementById('inputPlace').value = entry.place;
-            document.getElementById('inputRent').value = entry.rent;
-            document.getElementById('inputBasic').value = entry.basic;
-            document.getElementById('inputPay').value = entry.pay;
-            
-            document.getElementById('dataForm').dataset.editKey = key;
+    list.forEach(e=>{
+        r+=e.rent;
+        b+=e.basic;
+        p+=e.pay;
 
-            inputDate.dispatchEvent(new Event('change'));
-            calculateDue();
+        const due=e.basic-e.pay;
+        d+=due;
+        t+=due;
+    });
 
-            // Open modal
-            currentStep = 0;
-            showStep(0);
-            nextBtn.style.display = 'inline-block';
-            confirmBtn.style.display = 'none';
-            dataModal.style.display = 'block';
-        }
+    sumRent.innerText=r.toFixed(2);
+    sumBasic.innerText=b.toFixed(2);
+    sumPay.innerText=p.toFixed(2);
+    sumDue.innerText=d.toFixed(2);
+    sumTotalDue.innerText=t.toFixed(2);
+}
 
-        async function handleDelete(e) {
-            const key = e.target.dataset.id;
-            if (confirm('আপনি কি এই এন্ট্রিটি ডিলিট করতে চান?')) {
-                const userId = auth.currentUser.uid;
-                const entryRef = doc(db, `users/${userId}/entries`, key);
-                try {
-                    await deleteDoc(entryRef);
-                } catch (error) {
-                    alert('Delete failed: ' + error.message);
-                }
-            }
-        }
+document.getElementById("payHeader").onclick=()=>{
+    document.getElementById("payTypePopup").style.display="flex";
+};
 
-        dataForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userId = auth.currentUser.uid;
-            if (!userId) {
-                alert('User not logged in!');
-                return;
-            }
+document.querySelectorAll(".ptBtn").forEach(b=>{
+    b.onclick=()=>{
+        applyFilter(b.dataset.type);
+        document.getElementById("payTypePopup").style.display="none";
+    };
+});
 
-            const newEntry = {
-                date: inputDate.value,
-                place: inputPlace.value,
-                rent: parseFloat(inputRent.value) || 0,
-                basic: parseFloat(inputBasic.value) || 0,
-                pay: parseFloat(inputPay.value) || 0,
-            };
+function applyFilter(type){
+    currentFilter=type;
+    let list=allData;
 
-            const editKey = dataForm.dataset.editKey;
+    if(type==="hand") list=allData.filter(a=>a.payType==="hand");
+    if(type==="bkash") list=allData.filter(a=>a.payType==="bkash");
 
-            try {
-                if (editKey) {
-                    // Update existing
-                    const entryRef = doc(db, `users/${userId}/entries`, editKey);
-                    await updateDoc(entryRef, newEntry);
-                    delete dataForm.dataset.editKey; 
-                } else {
-                    // Add new
-                    const entriesRef = collection(db, `users/${userId}/entries`);
-                    await addDoc(entriesRef, newEntry);
-                }
-            } catch (error) {
-                 alert('ডেটা সেভ করতে সমস্যা হয়েছে: ' + error.message);
-            }
+    renderTable(list);
+}
 
 
-            dataModal.style.display = 'none';
-            dataForm.reset();
-        });
+document.getElementById("addNewBtn").onclick=()=>{
+    dataForm.reset();
+    delete dataForm.dataset.editKey;
+
+    inputPayType.value="";
+    updatePayTypeButtons();
+
+    currentStep=0;
+    showStep(0);
+    dataModal.style.display="flex";
+};
+
+document.querySelector(".close-btn").onclick=()=> dataModal.style.display="none";
 
 
-        // --- Popup/Modal Control (Unchanged) ---
-        function showStep(stepIndex) {
-            steps.forEach((stepId, index) => {
-                document.getElementById(stepId).style.display = (index === stepIndex) ? 'block' : 'none';
-            });
+let currentStep=0;
+const steps=["step1","step2","step3","step4","step5"];
 
-            prevBtn.disabled = stepIndex === 0;
-            nextBtn.style.display = stepIndex < steps.length - 1 ? 'inline-block' : 'none';
-            confirmBtn.style.display = stepIndex === steps.length - 1 ? 'inline-block' : 'none';
+function showStep(s){
+    steps.forEach((id,i)=>{
+        document.getElementById(id).style.display=i===s?"block":"none";
+    });
 
-            if (stepIndex === 4) {
-                 calculateDue();
-            }
-        }
+    prevBtn.disabled = s===0;
+    nextBtn.style.display = (s<4)?"inline-block":"none";
+    confirmBtn.style.display = (s===4)?"inline-block":"none";
+}
 
-        addNewBtn.addEventListener('click', () => {
-            dataForm.reset(); 
-            delete dataForm.dataset.editKey; 
-            autoDay.textContent = '';
-            autoDue.textContent = '';
-            currentStep = 0;
-            showStep(currentStep);
-            dataModal.style.display = 'block';
-        });
+showStep(0);
 
-        closeBtn.addEventListener('click', () => {
-            dataModal.style.display = 'none';
-        });
+prevBtn.onclick=()=>{ if(currentStep>0){ currentStep--; showStep(currentStep);} };
+nextBtn.onclick=()=>{ if(currentStep<4){ currentStep++; showStep(currentStep);} };
 
-        window.onclick = function(event) {
-            if (event.target == dataModal) {
-                dataModal.style.display = 'none';
-            }
-        }
+inputDate.onchange=()=>{
+    const d=new Date(inputDate.value+"T00:00:00");
+    autoDay.innerText=d.toLocaleDateString("bn-BD",{weekday:"long"});
+};
 
-        nextBtn.addEventListener('click', () => {
-            const currentInputContainer = document.getElementById(steps[currentStep]);
-            const currentInput = currentInputContainer.querySelector('input');
-            
-            if (currentInput && !currentInput.reportValidity()) {
-                 return;
-            }
+function calcDue(){
+    const b=parseFloat(inputBasic.value)||0;
+    const p=parseFloat(inputPay.value)||0;
+    autoDue.innerText=(b-p).toFixed(2);
+}
+inputBasic.oninput=calcDue;
+inputPay.oninput=calcDue;
 
-            if (currentStep < steps.length - 1) {
-                currentStep++;
-                showStep(currentStep);
-            }
-        });
 
-        prevBtn.addEventListener('click', () => {
-            if (currentStep > 0) {
-                currentStep--;
-                showStep(currentStep);
-            }
-        });
-        
-        showStep(currentStep); 
-    </script>
+dataForm.onsubmit=async(e)=>{
+    e.preventDefault();
+    const uid=auth.currentUser.uid;
+
+    const data={
+        date:inputDate.value,
+        place:inputPlace.value,
+        rent:+inputRent.value,
+        basic:+inputBasic.value,
+        pay:+inputPay.value,
+        payType:inputPayType.value || ""
+    };
+
+    if(dataForm.dataset.editKey){
+        await updateDoc(doc(db,`users/${uid}/entries`,dataForm.dataset.editKey),data);
+        delete dataForm.dataset.editKey;
+    } else {
+        await addDoc(collection(db,`users/${uid}/entries`),data);
+    }
+
+    dataModal.style.display="none";
+};
+
+function openEdit(id){
+    const e=allData.find(x=>x.id===id);
+
+    inputDate.value=e.date;
+    inputPlace.value=e.place;
+    inputRent.value=e.rent;
+    inputBasic.value=e.basic;
+    inputPay.value=e.pay;
+
+    inputPayType.value=e.payType || "";
+    updatePayTypeButtons();
+    setPayType(e.payType);
+
+    calcDue();
+
+    dataForm.dataset.editKey=id;
+
+    currentStep=0;
+    showStep(0);
+    dataModal.style.display="flex";
+}
+
+</script>
+
 </body>
 </html>
